@@ -10,4 +10,4 @@
 	- Upper Case Charactor without pressing Shift key.
 		ex) press 'a' longer and converts 'a' -> 'A'
 
-* Ctrl-Alt-Shift + number key => Move cursor to curresponding monitor.
+* Ctrl-Alt-Shift + number key => Move cursor to corresponding monitor.
