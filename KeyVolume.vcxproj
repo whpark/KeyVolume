@@ -146,6 +146,7 @@ if exist "$(OutDir)$(TargetName)$(TargetExt)" del "$(OutDir)$(TargetName)$(Targe
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ReadMe.md" />
     <None Include="res\KeyVolume.ico" />
     <None Include="res\KeyVolume.rc2" />
     <None Include="res\KeyVolumeDoc.ico" />
