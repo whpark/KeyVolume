@@ -140,7 +140,8 @@ void CKeyVolumeView::OnInitialUpdate() {
 	m_cmbZone.SetCurSel((int)g_eZone);
 	OnSelchangeReceiverZone();
 
-	SendReceiverVolume(0);
+	if (g_bReceiverVolume)
+		SendReceiverVolume(0);
 
 	SetTimer(T_UPDATE_UI, 100, nullptr);
 }
@@ -504,6 +505,17 @@ BOOL CALLBACK MouseJump_MonitorProc(HMONITOR, HDC, LPRECT pRect, LPARAM pMonitor
 	CRect rect(pRect);
 	mp.iLast++;
 	if (mp.iMonitor >= mp.iLast) {
+		//mouse_event(MOUSEEVENTF_MOVE, 10, 10, 0, 0);
+		// Send WM_MOUSEMOVE for drawing cursor first
+		{
+			INPUT input{};
+			input.type = INPUT_MOUSE;
+			auto& mi = input.mi;
+			mi.dx = mi.dy = 10;
+			mi.dwFlags = MOUSEEVENTF_MOVE;
+			mi.dwExtraInfo = 0;
+			SendInput(1, &input, sizeof(input));
+		}
 		auto pt = rect.CenterPoint();
 		SetCursorPos(pt.x, pt.y);
 	}
