@@ -54,6 +54,7 @@ BEGIN_MESSAGE_MAP(CKeyVolumeView, CFormView)
 	ON_UPDATE_COMMAND_UI(ID_CONTEXTMENU_AUTO_SHIFT, &CKeyVolumeView::OnUpdateAutoShift)
 	ON_COMMAND(ID_CONTEXTMENU_QUIT, &CKeyVolumeView::OnQuit)
 	ON_CBN_SELCHANGE(IDC_RECEIVER_ZONE, &CKeyVolumeView::OnSelchangeReceiverZone)
+	ON_BN_CLICKED(IDC_WAKE_UP_SERVER, &CKeyVolumeView::OnBnClickedWakeUpServer)
 END_MESSAGE_MAP()
 
 // CKeyVolumeView construction/destruction
@@ -717,4 +718,60 @@ LRESULT AutoShift(int nCode, WPARAM wParam, LPARAM lParam) {
 	}
 
 	return lResult;
+}
+
+std::vector<uint32_t> ParseMacAddress(const std::string& strMacAddr) {
+	std::vector<uint32_t> addr(6);
+	// from string to mac address
+	auto r = scn::scan(strMacAddr, "{:x}{:x}{:x}{:x}{:x}{:x}", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+
+	if (!r) {
+		throw std::runtime_error("Invalid MAC address format");
+	}
+
+	return addr;
+}
+
+void send_wol_packet(const std::string& strMacAddr, const std::string& broadcast_address) {
+	using boost::asio::ip::udp;
+
+	// Parse the MAC address string.
+	std::vector<uint32_t> mac_address = ParseMacAddress(strMacAddr);
+
+	// Construct the Magic Packet.
+	std::vector<uint8_t> magic_packet(6, 0xFF);
+	for (int i = 0; i < 16; ++i)
+		magic_packet.insert(magic_packet.end(), mac_address.begin(), mac_address.end());
+
+	// Create a UDP socket and send the Magic Packet.
+	boost::asio::io_service io_service;
+	udp::socket socket(io_service);
+	socket.open(udp::v4());
+
+	udp::endpoint broadcast_endpoint(boost::asio::ip::address_v4::from_string(broadcast_address), 9);
+	socket.set_option(boost::asio::socket_base::broadcast(true));
+
+	socket.send_to(boost::asio::buffer(magic_packet), broadcast_endpoint);
+}
+
+void CKeyVolumeView::OnBnClickedWakeUpServer() {
+	CString strMacAddress;
+	GetDlgItemText(IDC_MAC_ADDRESS, strMacAddress);
+	if (strMacAddress.IsEmpty())
+		strMacAddress = L"D0:17:C2:86:68:5B";
+	strMacAddress.Trim();
+	if (strMacAddress.GetLength() > 3) {
+		auto c = strMacAddress[2];
+		if ( !isdigit(c) and (c != ' ') ) {
+			strMacAddress.Replace(c, ' ');
+		}
+	}
+	try {
+		std::string str = (LPCSTR)CW2A(strMacAddress);
+		send_wol_packet(str, "192.168.10.255");
+	} catch (std::exception& e) {
+		CString str {e.what()};
+		MessageBox(str);
+	}
+
 }

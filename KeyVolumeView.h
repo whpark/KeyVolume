@@ -63,6 +63,7 @@ public:
 	afx_msg void OnSelchangeReceiverZone();
 	afx_msg void OnBnClickedReceiverPowerOn();
 	afx_msg void OnBnClickedReceiverPowerOff();
+	afx_msg void OnBnClickedWakeUpServer();
 };
 
 #ifndef _DEBUG  // debug version in KeyVolumeView.cpp

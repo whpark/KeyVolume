@@ -27,6 +27,8 @@
 #define IDC_RECEIVER_ZONE               1012
 #define IDC_CB_JUMP_MOUSE               1013
 #define IDC_CB_MOUSE_JUMP               1013
+#define IDC_WAKE_UP_SERVER              1014
+#define IDC_MAC_ADDRESS                 1015
 #define ID_CONTEXTMENU_RECEIVERPOWEROFF 32772
 #define ID_CONTEXTMENU_RECEIVERPOWERON  32773
 #define ID_RECEIVER_POWER_OFF           32774
@@ -48,7 +50,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         32786
-#define _APS_NEXT_CONTROL_VALUE         1013
+#define _APS_NEXT_CONTROL_VALUE         1016
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
