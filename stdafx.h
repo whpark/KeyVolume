@@ -66,7 +66,7 @@
 #endif
 
 
-#include "scn/all.h"
+#include <scn/scan.h>
 
 
 

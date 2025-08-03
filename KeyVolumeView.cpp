@@ -16,7 +16,7 @@
 bool g_bSendSpeakerVolumeKey{};
 bool g_bAutoShift{};
 bool g_bMouseJump{};
-int g_nMonitor{};
+uint32_t g_nMonitor{};
 enum class eZONE : int { main = 0, zone_2 } g_eZone;
 std::string g_strZone;
 bool g_bReceiverVolume{};
@@ -723,11 +723,19 @@ LRESULT AutoShift(int nCode, WPARAM wParam, LPARAM lParam) {
 std::vector<uint32_t> ParseMacAddress(const std::string& strMacAddr) {
 	std::vector<uint32_t> addr(6);
 	// from string to mac address
-	auto r = scn::scan(strMacAddr, "{:x}{:x}{:x}{:x}{:x}{:x}", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+	auto r = scn::scan<uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t>(strMacAddr, "{:x}{:x}{:x}{:x}{:x}{:x}");//, addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
 
 	if (!r) {
 		throw std::runtime_error("Invalid MAC address format");
 	}
+
+	auto [a0, a1, a2, a3, a4, a5] = r->values();
+	addr[0] = a0;
+	addr[1] = a1;
+	addr[2] = a2;
+	addr[3] = a3;
+	addr[4] = a4;
+	addr[5] = a5;
 
 	return addr;
 }
@@ -744,11 +752,11 @@ void send_wol_packet(const std::string& strMacAddr, const std::string& broadcast
 		magic_packet.insert(magic_packet.end(), mac_address.begin(), mac_address.end());
 
 	// Create a UDP socket and send the Magic Packet.
-	boost::asio::io_service io_service;
-	udp::socket socket(io_service);
+	boost::asio::io_context ctx;
+	udp::socket socket(ctx);
 	socket.open(udp::v4());
 
-	udp::endpoint broadcast_endpoint(boost::asio::ip::address_v4::from_string(broadcast_address), 9);
+	udp::endpoint broadcast_endpoint(boost::asio::ip::make_address_v4(broadcast_address), 9);
 	socket.set_option(boost::asio::socket_base::broadcast(true));
 
 	socket.send_to(boost::asio::buffer(magic_packet), broadcast_endpoint);
@@ -757,8 +765,10 @@ void send_wol_packet(const std::string& strMacAddr, const std::string& broadcast
 void CKeyVolumeView::OnBnClickedWakeUpServer() {
 	CString strMacAddress;
 	GetDlgItemText(IDC_MAC_ADDRESS, strMacAddress);
-	if (strMacAddress.IsEmpty())
-		strMacAddress = L"D0:17:C2:86:68:5B";
+	if (strMacAddress.IsEmpty()) {
+		//strMacAddress = L"D0:17:C2:86:68:5B";
+		strMacAddress = L"74-56-3C-6C-3B-80";
+	}
 	strMacAddress.Trim();
 	if (strMacAddress.GetLength() > 3) {
 		auto c = strMacAddress[2];
