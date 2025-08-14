@@ -156,6 +156,7 @@ void CKeyVolumeView::OnInitialUpdate() {
 		SendReceiverVolume(0);
 
 	SetTimer(T_UPDATE_UI, 100, nullptr);
+	SetTimer(T_SLOW_POLL, 3'000, nullptr);
 }
 
 // CKeyVolumeView diagnostics
@@ -195,6 +196,13 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 				KillTimer(T_GENERATE_KEY);
 				SetTimer(T_GENERATE_KEY, interval*1'000, nullptr);
 			}
+
+			if (IsWindowVisible()) {
+				if (g_bGenerateKey ^ IsDlgButtonChecked(IDC_CB_START)) {
+					CheckDlgButton(IDC_CB_START, g_bGenerateKey ? 1 : 0);
+					m_box.ShowVolume(g_bGenerateKey ? _T("VolDn") : _T("off"), 1500ms);
+				}
+			}
 		}
 		return;
 		break;
@@ -209,6 +217,11 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 		//	SendMouse(ptRel);
 		//	TRACE("Mouse Jump (%d, %d)\n", ptRel.x, ptRel.y);
 		//}
+		return;
+		break;
+
+	case T_SLOW_POLL:
+		g_nMonitor = GetSystemMetrics(SM_CMONITORS);
 		return;
 		break;
 	}
@@ -565,6 +578,9 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 
 		KBDLLHOOKSTRUCT* pKey = reinterpret_cast< KBDLLHOOKSTRUCT* > (lParam);
 
+		TRACE("VK : %d, ScanCode : %d, Flags : 0x%08x, Time : %d, ExtraInfo : 0x%08x\n",
+			pKey->vkCode, pKey->scanCode, pKey->flags, pKey->time, pKey->dwExtraInfo);
+
 		if (g_bSendSpeakerVolumeKey) {
 			if ( ( (pKey->vkCode == VK_UP) || (pKey->vkCode == VK_DOWN) )
 				&& (GetKeyState(VK_RSHIFT) < 0)
@@ -576,6 +592,20 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 				)
 			{
 				SendVolume(pKey->vkCode == VK_UP);
+				return -1L;
+			}
+		}
+
+		if ( (pKey->vkCode == 219) || (pKey->vkCode == 221)) {
+			// Page Up/Down
+			if (GetKeyState(VK_RSHIFT) < 0
+				&& GetKeyState(VK_RCONTROL) < 0
+				&& GetKeyState(VK_RMENU) < 0
+				&& GetKeyState(VK_LWIN) >= 0
+				&& GetKeyState(VK_RWIN) >= 0
+				&& GetKeyState(VK_APPS) >= 0)
+			{
+				g_bGenerateKey = pKey->vkCode == 219;
 				return -1L;
 			}
 		}

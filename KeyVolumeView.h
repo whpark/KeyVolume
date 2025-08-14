@@ -47,7 +47,7 @@ protected:
 public:
 	// Volume Up/Down Signal (VK_VOLUME_UP/DOWN)
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-	enum eTIMER { T_UPDATE_UI = 3901, T_GENERATE_KEY, };
+	enum eTIMER { T_UPDATE_UI = 3901, T_SLOW_POLL, T_GENERATE_KEY, };
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnVolumeUp();
 	afx_msg void OnVolumeDown();
