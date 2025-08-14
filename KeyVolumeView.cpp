@@ -198,11 +198,9 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 				SetTimer(T_GENERATE_KEY, interval*1'000, nullptr);
 			}
 
-			if (IsWindowVisible()) {
-				if (g_bGenerateKey ^ IsDlgButtonChecked(IDC_CB_START)) {
-					CheckDlgButton(IDC_CB_START, g_bGenerateKey ? 1 : 0);
-					m_box.ShowVolume(g_bGenerateKey ? _T("VolDn") : _T("off"), 1500ms);
-				}
+			if (g_bGenerateKey ^ IsDlgButtonChecked(IDC_CB_START)) {
+				CheckDlgButton(IDC_CB_START, g_bGenerateKey ? 1 : 0);
+				m_box.ShowVolume(g_bGenerateKey ? _T("VolDn") : _T("off"), 1500ms);
 			}
 
 			if (g_bWOL.exchange(false)) {
