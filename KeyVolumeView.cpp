@@ -602,7 +602,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 
-		if ( (pKey->vkCode == 219) || (pKey->vkCode == 221)) {
+		if ((pKey->vkCode == 219) || (pKey->vkCode == 221)) {	// '[' and ']'
 			// Page Up/Down
 			if (GetKeyState(VK_RSHIFT) < 0
 				&& GetKeyState(VK_RCONTROL) < 0
@@ -611,12 +611,12 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 				&& GetKeyState(VK_RWIN) >= 0
 				&& GetKeyState(VK_APPS) >= 0)
 			{
-				g_bGenerateKey = pKey->vkCode == 219;
+				g_bGenerateKey = pKey->vkCode == 219;	// '['
 				return -1L;
 			}
 		}
 
-		if ((pKey->vkCode == '\\')
+		if ((pKey->vkCode == 220)	// '\'
 			&& GetKeyState(VK_RSHIFT) < 0
 			&& GetKeyState(VK_RCONTROL) < 0
 			&& GetKeyState(VK_RMENU) < 0
