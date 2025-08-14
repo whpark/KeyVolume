@@ -22,10 +22,14 @@ std::string g_strZone;
 bool g_bReceiverVolume{};
 int g_minRepeatCount{2};
 int g_receiverVolume{};
+bool g_bGenerateKey{};
+std::atomic<bool> g_bTouch{};
 
 bool SendVolume(bool bUp);
 bool SendReceiverVolume(int diff);
 LRESULT AutoShift(int nCode, WPARAM wParam, LPARAM lParam);
+void SendKey(WORD vk, WORD scanCode);
+void SendMouse(CPoint ptRel);
 
 // CKeyVolumeView
 
@@ -55,6 +59,7 @@ BEGIN_MESSAGE_MAP(CKeyVolumeView, CFormView)
 	ON_COMMAND(ID_CONTEXTMENU_QUIT, &CKeyVolumeView::OnQuit)
 	ON_CBN_SELCHANGE(IDC_RECEIVER_ZONE, &CKeyVolumeView::OnSelchangeReceiverZone)
 	ON_BN_CLICKED(IDC_WAKE_UP_SERVER, &CKeyVolumeView::OnBnClickedWakeUpServer)
+	ON_BN_CLICKED(IDC_CB_START, &CKeyVolumeView::OnBnClickedCbStart)
 END_MESSAGE_MAP()
 
 // CKeyVolumeView construction/destruction
@@ -141,6 +146,12 @@ void CKeyVolumeView::OnInitialUpdate() {
 	m_cmbZone.SetCurSel((int)g_eZone);
 	OnSelchangeReceiverZone();
 
+	CString strMAC = theApp.GetProfileString(_T("misc"), _T("MAC"), _T(""));
+	SetDlgItemText(IDC_MAC_ADDRESS, strMAC);
+
+	auto interval = theApp.GetProfileInt(_T("misc"), _T("Interval"), 230);
+	SetDlgItemInt(IDC_INTERVAL, interval);
+
 	if (g_bReceiverVolume)
 		SendReceiverVolume(0);
 
@@ -177,7 +188,27 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 				g_minRepeatCount = minRepeatCount;
 				theApp.WriteProfileInt(_T("misc"), _T("MinRepeatCount"), g_minRepeatCount);
 			}
+
+			if (g_bGenerateKey && g_bTouch.exchange(false)) {
+				TRACE("Checked\n");
+				auto interval = GetDlgItemInt(IDC_INTERVAL);
+				KillTimer(T_GENERATE_KEY);
+				SetTimer(T_GENERATE_KEY, interval*1'000, nullptr);
+			}
 		}
+		return;
+		break;
+
+	case T_GENERATE_KEY:
+		SendKey(VK_VOLUME_DOWN, 0);
+		//{
+		//	//random
+		//	CPoint ptRel;
+		//	ptRel.x = rand() % 23 - 10;
+		//	ptRel.y = rand() % 25 - 12;
+		//	SendMouse(ptRel);
+		//	TRACE("Mouse Jump (%d, %d)\n", ptRel.x, ptRel.y);
+		//}
 		return;
 		break;
 	}
@@ -530,6 +561,8 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 
 	if (wParam == WM_KEYDOWN && lParam) {
 
+		g_bTouch = true;
+
 		KBDLLHOOKSTRUCT* pKey = reinterpret_cast< KBDLLHOOKSTRUCT* > (lParam);
 
 		if (g_bSendSpeakerVolumeKey) {
@@ -601,6 +634,16 @@ void SendKey(WORD vk, WORD scanCode) {
 	input.ki.time = 0;
 	input.ki.wScan = scanCode;
 	input.ki.wVk = vk;
+	SendInput(1, &input, sizeof(input));
+}
+
+void SendMouse(CPoint ptRel) {
+	INPUT input{};
+	input.type = INPUT_MOUSE;
+	input.mi.dx = ptRel.x;
+	input.mi.dy = ptRel.y;
+	input.mi.dwFlags = MOUSEEVENTF_MOVE;
+	input.mi.dwExtraInfo = 0;
 	SendInput(1, &input, sizeof(input));
 }
 
@@ -765,11 +808,14 @@ void send_wol_packet(const std::string& strMacAddr, const std::string& broadcast
 void CKeyVolumeView::OnBnClickedWakeUpServer() {
 	CString strMacAddress;
 	GetDlgItemText(IDC_MAC_ADDRESS, strMacAddress);
-	if (strMacAddress.IsEmpty()) {
-		//strMacAddress = L"D0:17:C2:86:68:5B";
-		strMacAddress = L"74-56-3C-6C-3B-80";
-	}
 	strMacAddress.Trim();
+	if (strMacAddress.IsEmpty()) {
+		MessageBox(_T("Please enter a valid MAC address."));
+		return;
+	}
+	if (auto str = theApp.GetProfileString(_T("misc"), _T("MAC")); str != strMacAddress) {
+		theApp.WriteProfileString(_T("misc"), _T("MAC"), strMacAddress);
+	}
 	if (strMacAddress.GetLength() > 3) {
 		auto c = strMacAddress[2];
 		if ( !isdigit(c) and (c != ' ') ) {
@@ -785,3 +831,20 @@ void CKeyVolumeView::OnBnClickedWakeUpServer() {
 	}
 
 }
+
+void CKeyVolumeView::OnBnClickedCbStart() {
+	if (IsDlgButtonChecked(IDC_CB_START)) {
+		g_bGenerateKey = true;
+		auto interval = GetDlgItemInt(IDC_INTERVAL);
+		if (interval)
+			theApp.WriteProfileInt(_T("misc"), _T("Interval"), interval);
+		else
+			interval = 230;
+		SetTimer(T_GENERATE_KEY, interval*1'000, nullptr);
+	} else {
+		g_bGenerateKey = false;
+		KillTimer(T_GENERATE_KEY);
+	}
+
+}
+

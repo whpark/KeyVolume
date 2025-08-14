@@ -75,6 +75,7 @@
     </None>
     <None Include="ReadMe.txt" />
     <None Include="ReadMe.md" />
+    <None Include=".gitignore" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KeyVolume.rc">
