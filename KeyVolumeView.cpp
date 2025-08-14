@@ -23,6 +23,7 @@ bool g_bReceiverVolume{};
 int g_minRepeatCount{2};
 int g_receiverVolume{};
 bool g_bGenerateKey{};
+std::atomic<bool> g_bWOL{};
 std::atomic<bool> g_bTouch{};
 
 bool SendVolume(bool bUp);
@@ -202,6 +203,11 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 					CheckDlgButton(IDC_CB_START, g_bGenerateKey ? 1 : 0);
 					m_box.ShowVolume(g_bGenerateKey ? _T("VolDn") : _T("off"), 1500ms);
 				}
+			}
+
+			if (g_bWOL.exchange(false)) {
+				OnBnClickedWakeUpServer();
+				m_box.ShowVolume(_T("WOL"), 1500ms);
 			}
 		}
 		return;
@@ -608,6 +614,18 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 				g_bGenerateKey = pKey->vkCode == 219;
 				return -1L;
 			}
+		}
+
+		if ((pKey->vkCode == '\\')
+			&& GetKeyState(VK_RSHIFT) < 0
+			&& GetKeyState(VK_RCONTROL) < 0
+			&& GetKeyState(VK_RMENU) < 0
+			&& GetKeyState(VK_LWIN) >= 0
+			&& GetKeyState(VK_RWIN) >= 0
+			&& GetKeyState(VK_APPS) >= 0)
+		{
+			g_bWOL = true;
+			return -1L;
 		}
 
 		if (g_bMouseJump) {
