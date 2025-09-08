@@ -22,7 +22,7 @@ std::string g_strZone;
 bool g_bReceiverVolume{};
 int g_minRepeatCount{2};
 int g_receiverVolume{};
-bool g_bGenerateKey{};
+volatile bool g_bGenerateKey{};
 std::atomic<bool> g_bWOL{};
 std::atomic<bool> g_bTouch{};
 
@@ -198,9 +198,9 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 				SetTimer(T_GENERATE_KEY, interval*1'000, nullptr);
 			}
 
-			if (g_bGenerateKey ^ IsDlgButtonChecked(IDC_CB_START)) {
+			if (bool bChecked = IsDlgButtonChecked(IDC_CB_START); (bChecked and !g_bGenerateKey) or (!bChecked and g_bGenerateKey) ) {
 				CheckDlgButton(IDC_CB_START, g_bGenerateKey ? 1 : 0);
-				m_box.ShowVolume(g_bGenerateKey ? _T("VolDn") : _T("off"), 1500ms);
+				OnBnClickedCbStart();
 			}
 
 			if (g_bWOL.exchange(false)) {
@@ -212,7 +212,8 @@ void CKeyVolumeView::OnTimer(UINT_PTR nIDEvent) {
 		break;
 
 	case T_GENERATE_KEY:
-		SendKey(VK_VOLUME_DOWN, 0);
+		if (g_bGenerateKey)
+			SendKey(VK_VOLUME_DOWN, 0);
 		//{
 		//	//random
 		//	CPoint ptRel;
@@ -610,6 +611,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam) {
 				&& GetKeyState(VK_APPS) >= 0)
 			{
 				g_bGenerateKey = pKey->vkCode == 219;	// '['
+				g_bTouch = true;
 				return -1L;
 			}
 		}
@@ -891,6 +893,6 @@ void CKeyVolumeView::OnBnClickedCbStart() {
 		g_bGenerateKey = false;
 		KillTimer(T_GENERATE_KEY);
 	}
-
+	m_box.ShowVolume(g_bGenerateKey ? _T("VolDn") : _T("off"), 1500ms);
 }
 
